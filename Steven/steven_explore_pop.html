@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>World Population Data Exploration</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px; }
+        h1 { text-align: center; color: #333; }
+        .dashboard { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 20px; }
+        .chart-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 45%; min-width: 500px; }
+        .chart-container.full-width { width: 95%; }
+        h2 { font-size: 16px; text-align: center; color: #555; }
+        .axis-label { font-size: 12px; font-weight: bold; }
+        .tooltip { position: absolute; background: #333; color: #fff; padding: 8px; border-radius: 4px; pointer-events: none; opacity: 0; font-size: 12px; transition: opacity 0.2s; }
+        path, line { stroke: #ccc; }
+        text { fill: #333; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <h1>World Population Exploration Dashboard</h1>
+    <div id="tooltip" class="tooltip"></div>
+
+    <div class="dashboard">
+        <div class="chart-container" id="chart1">
+            <h2>1. Top 10 Most Populous Countries (2022)</h2>
+        </div>
+        <div class="chart-container" id="chart2">
+            <h2>2. 2022 Population by Continent</h2>
+        </div>
+        <div class="chart-container full-width" id="chart3">
+            <h2>3. Population Growth Trends by Continent (1970 - 2022)</h2>
+        </div>
+        <div class="chart-container" id="chart4">
+            <h2>4. Area vs. Population (Log Scales)</h2>
+        </div>
+        <div class="chart-container" id="chart5">
+            <h2>5. Density vs. Growth Rate (Bubble = Population)</h2>
+        </div>
+    </div>
+
+    <script>
+        // Load data
+        d3.csv("world_population.csv").then(data => {
+
+            // Clean and format data
+            data.forEach(d => {
+                d["2022 Population"] = +d["2022 Population"];
+                d["2020 Population"] = +d["2020 Population"];
+                d["2015 Population"] = +d["2015 Population"];
+                d["2010 Population"] = +d["2010 Population"];
+                d["2000 Population"] = +d["2000 Population"];
+                d["1990 Population"] = +d["1990 Population"];
+                d["1980 Population"] = +d["1980 Population"];
+                d["1970 Population"] = +d["1970 Population"];
+                d["Area (km²)"] = +d["Area (km²)"];
+                d["Density (per km²)"] = +d["Density (per km²)"];
+                d["Growth Rate"] = +d["Growth Rate"];
+            });
+
+            const tooltip = d3.select("#tooltip");
+
+            // Define standard dimensions
+            const width = 500, height = 300, margin = {top: 20, right: 20, bottom: 50, left: 70};
+            const innerWidth = width - margin.left - margin.right;
+            const innerHeight = height - margin.top - margin.bottom;
+            const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+            // =========================================================
+            // Chart 1: Bar Chart - Top 10 Populous Countries
+            // =========================================================
+            const top10 = [...data].sort((a, b) => b["2022 Population"] - a["2022 Population"]).slice(0, 10);
+
+            const svg1 = d3.select("#chart1").append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const x1 = d3.scaleBand().domain(top10.map(d => d["CCA3"])).range([0, innerWidth]).padding(0.2);
+            const y1 = d3.scaleLinear().domain([0, d3.max(top10, d => d["2022 Population"])]).range([innerHeight, 0]);
+
+            svg1.append("g").attr("transform", `translate(0,${innerHeight})`).call(d3.axisBottom(x1));
+            svg1.append("g").call(d3.axisLeft(y1).ticks(5).tickFormat(d3.format(".2s")));
+
+            svg1.selectAll(".bar")
+                .data(top10).enter().append("rect")
+                .attr("class", "bar").attr("x", d => x1(d["CCA3"])).attr("width", x1.bandwidth())
+                .attr("y", d => y1(d["2022 Population"])).attr("height", d => innerHeight - y1(d["2022 Population"]))
+                .attr("fill", "steelblue")
+                .on("mouseover", (event, d) => {
+                    tooltip.style("opacity", 1).html(`${d["Country/Territory"]}: ${d3.format(",")(d["2022 Population"])}`);
+                })
+                .on("mousemove", event => tooltip.style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 20) + "px"))
+                .on("mouseout", () => tooltip.style("opacity", 0));
+
+            // =========================================================
+            // Chart 2: Donut Chart - Population by Continent
+            // =========================================================
+            const popByContinent = d3.rollup(data, v => d3.sum(v, d => d["2022 Population"]), d => d["Continent"]);
+            const pieData = Array.from(popByContinent, ([key, value]) => ({key, value}));
+
+            const radius = Math.min(width, height) / 2 - 20;
+            const svg2 = d3.select("#chart2").append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .append("g").attr("transform", `translate(${width/2},${height/2})`);
+
+            const pie = d3.pie().value(d => d.value);
+            const arc = d3.arc().innerRadius(radius * 0.5).outerRadius(radius);
+
+            svg2.selectAll("path")
+                .data(pie(pieData)).enter().append("path")
+                .attr("d", arc).attr("fill", d => colorScale(d.data.key))
+                .attr("stroke", "white").style("stroke-width", "2px")
+                .on("mouseover", (event, d) => {
+                    tooltip.style("opacity", 1).html(`${d.data.key}: ${d3.format(".2s")(d.data.value)}`);
+                })
+                .on("mousemove", event => tooltip.style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 20) + "px"))
+                .on("mouseout", () => tooltip.style("opacity", 0));
+
+            // =========================================================
+            // Chart 3: Line Chart - Population Trends by Continent
+            // =========================================================
+            const years = ["1970 Population", "1980 Population", "1990 Population", "2000 Population", "2010 Population", "2015 Population", "2020 Population", "2022 Population"];
+            const numericYears = [1970, 1980, 1990, 2000, 2010, 2015, 2020, 2022];
+
+            const trendData = Array.from(d3.group(data, d => d["Continent"]), ([key, values]) => {
+                return {
+                    continent: key,
+                    values: years.map((y, i) => ({ year: numericYears[i], pop: d3.sum(values, v => v[y]) }))
+                };
+            });
+
+            const w3 = 1000, h3 = 300;
+            const svg3 = d3.select("#chart3").append("svg").attr("viewBox", `0 0 ${w3} ${h3}`).append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const x3 = d3.scaleLinear().domain(d3.extent(numericYears)).range([0, w3 - margin.left - margin.right - 100]);
+            const y3 = d3.scaleLinear().domain([0, d3.max(trendData, d => d3.max(d.values, v => v.pop))]).range([h3 - margin.top - margin.bottom, 0]);
+
+            svg3.append("g").attr("transform", `translate(0,${h3 - margin.top - margin.bottom})`).call(d3.axisBottom(x3).tickFormat(d3.format("d")));
+            svg3.append("g").call(d3.axisLeft(y3).tickFormat(d3.format(".2s")));
+
+            const line = d3.line().x(d => x3(d.year)).y(d => y3(d.pop));
+
+            svg3.selectAll(".line")
+                .data(trendData).enter().append("path")
+                .attr("fill", "none").attr("stroke", d => colorScale(d.continent)).attr("stroke-width", 2)
+                .attr("d", d => line(d.values));
+
+            svg3.selectAll(".label")
+                .data(trendData).enter().append("text")
+                .attr("x", x3(2022) + 5).attr("y", d => y3(d.values[7].pop))
+                .text(d => d.continent).style("fill", d => colorScale(d.continent)).style("font-size", "12px");
+
+            // =========================================================
+            // Chart 4: Scatter Plot - Area vs Population
+            // =========================================================
+            const svg4 = d3.select("#chart4").append("svg").attr("viewBox", `0 0 ${width} ${height}`).append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const x4 = d3.scaleLog().domain([1, d3.max(data, d => d["Area (km²)"])]).range([0, innerWidth]);
+            const y4 = d3.scaleLog().domain([1000, d3.max(data, d => d["2022 Population"])]).range([innerHeight, 0]);
+
+            svg4.append("g").attr("transform", `translate(0,${innerHeight})`).call(d3.axisBottom(x4).ticks(5).tickFormat(d3.format(".0s")));
+            svg4.append("g").call(d3.axisLeft(y4).ticks(5).tickFormat(d3.format(".0s")));
+
+            svg4.selectAll("circle")
+                .data(data).enter().append("circle")
+                .attr("cx", d => x4(d["Area (km²)"] || 1)).attr("cy", d => y4(d["2022 Population"] || 1000))
+                .attr("r", 4).attr("fill", d => colorScale(d["Continent"])).attr("opacity", 0.7)
+                .on("mouseover", (event, d) => {
+                    tooltip.style("opacity", 1).html(`${d["Country/Territory"]}<br>Area: ${d3.format(",")(d["Area (km²)"])}<br>Pop: ${d3.format(",")(d["2022 Population"])}`);
+                })
+                .on("mousemove", event => tooltip.style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 20) + "px"))
+                .on("mouseout", () => tooltip.style("opacity", 0));
+
+            // =========================================================
+            // Chart 5: Bubble Chart - Density vs Growth Rate
+            // =========================================================
+            const svg5 = d3.select("#chart5").append("svg").attr("viewBox", `0 0 ${width} ${height}`).append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const validData = data.filter(d => d["Density (per km²)"] > 0 && d["Growth Rate"] > 0);
+
+            const x5 = d3.scaleLog().domain([1, d3.max(validData, d => d["Density (per km²)"])]).range([0, innerWidth]);
+            const y5 = d3.scaleLinear().domain(d3.extent(validData, d => d["Growth Rate"])).range([innerHeight, 0]);
+            const r5 = d3.scaleSqrt().domain([0, d3.max(validData, d => d["2022 Population"])]).range([2, 25]);
+
+            svg5.append("g").attr("transform", `translate(0,${innerHeight})`).call(d3.axisBottom(x5).ticks(5, "~s"));
+            svg5.append("g").call(d3.axisLeft(y5));
+
+            svg5.selectAll("circle")
+                .data(validData).enter().append("circle")
+                .attr("cx", d => x5(d["Density (per km²)"])).attr("cy", d => y5(d["Growth Rate"]))
+                .attr("r", d => r5(d["2022 Population"])).attr("fill", "coral").attr("opacity", 0.6).attr("stroke", "#333")
+                .on("mouseover", (event, d) => {
+                    tooltip.style("opacity", 1).html(`${d["Country/Territory"]}<br>Density: ${d["Density (per km²)"]}<br>Growth: ${d["Growth Rate"]}`);
+                })
+                .on("mousemove", event => tooltip.style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 20) + "px"))
+                .on("mouseout", () => tooltip.style("opacity", 0));
+        });
+    </script>
+</body>
+</html>
