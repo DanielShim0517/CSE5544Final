@@ -1,0 +1,17 @@
+sunlight,water,count
+Full sun,High,15
+Full sun,Low,14
+Full sun,Medium,54
+Full sun,Very High,1
+Full sun,Very low,1
+Full sun,high,1
+Full sun,very high,1
+Full sun/partial shade,High,6
+Full sun/partial shade,Low,4
+Full sun/partial shade,Medium,34
+Full sun/partial shade/full shade,Medium,1
+Full sun/partial shade/full shade,Very Low,1
+Partial shade,High,3
+Partial shade,Medium,2
+full sun/partial shade/ full shade,Medium,1
+partial shade,Medium,1
