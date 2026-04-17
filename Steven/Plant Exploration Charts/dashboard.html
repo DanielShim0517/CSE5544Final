@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Data Dashboard</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 25px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        .chart-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .chart-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #69b3a2;
+            padding-bottom: 5px;
+            width: 100%;
+            text-align: center;
+        }
+        svg {
+            font-size: 10px;
+        }
+        .axis-label {
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-header">
+        <h1>Plant Insights Explorer</h1>
+        <p>Analyzing cultivation, pH tolerance, growth cycles, and environmental needs.</p>
+    </div>
+
+    <div class="grid-container">
+        <div class="chart-card">
+            <div class="chart-title">Plant Counts by Cultivation Category</div>
+            <div id="viz1"></div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-title">Preferred pH Range (Lower to Upper)</div>
+            <div id="viz2"></div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-title">Germination vs. Harvest Duration (Days)</div>
+            <div id="viz3"></div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-title">Sunlight vs. Water Requirements</div>
+            <div id="viz4"></div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-title">Temperature Class Distribution</div>
+            <div id="viz5"></div>
+        </div>
+    </div>
+
+    <script src="plant_explore.js"></script>
+
+    <script>
+        /** * NOTE: Since your script uses specific IDs and relative paths,
+         * ensure cultivation_counts.csv, cleaned_edible_plants.csv,
+         * and sun_water_counts.csv are in the same directory (or the
+         * sub-paths specified in your JS).
+         */
+    </script>
+</body>
+</html>
